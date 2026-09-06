@@ -799,15 +799,15 @@ export class IndexCoordinator {
 }
 
 function resolveCacheDirectory(): string {
-  // PI_CBM_CACHE_DIR is the extension-facing name. Keep following the
-  // upstream CBM_CACHE_DIR when it is set so the coordinator stays beside the
-  // CLI's databases even when the upstream variable is configured directly.
-  const configured = process.env.PI_CBM_CACHE_DIR?.trim() || process.env.CBM_CACHE_DIR?.trim();
+  // PI_CBM_MD_CACHE_DIR is the extension-facing name. Keep following legacy
+  // PI_CBM_CACHE_DIR and upstream CBM_CACHE_DIR so coordination stays beside
+  // existing CLI databases when those variables are configured directly.
+  const configured = process.env.PI_CBM_MD_CACHE_DIR?.trim() || process.env.PI_CBM_CACHE_DIR?.trim() || process.env.CBM_CACHE_DIR?.trim();
   return resolve(configured || join(homedir(), ".cache", "codebase-memory-mcp"));
 }
 
 function resolveMaxConcurrentIndexes(): number {
-  const configured = process.env.PI_CBM_MAX_CONCURRENT_INDEXES?.trim() || process.env.CBM_MAX_CONCURRENT_INDEXES?.trim();
+  const configured = process.env.PI_CBM_MD_MAX_CONCURRENT_INDEXES?.trim() || process.env.PI_CBM_MAX_CONCURRENT_INDEXES?.trim() || process.env.CBM_MAX_CONCURRENT_INDEXES?.trim();
   if (!configured) return 1;
   const parsed = Number(configured);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;

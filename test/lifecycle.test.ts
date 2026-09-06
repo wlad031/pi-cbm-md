@@ -3,53 +3,27 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CbmServices } from "../src/pi-tools/definitions.js";
 
 afterEach(() => {
-  vi.useRealTimers();
   vi.resetModules();
-  vi.unstubAllEnvs();
 });
 
-describe("lifecycle auto-refresh", () => {
-  it.each([
-    { primary: undefined, legacy: undefined, expectedInterval: 60_000 },
-    { primary: "25", legacy: undefined, expectedInterval: 25 },
-    { primary: undefined, legacy: "35", expectedInterval: 35 },
-    { primary: "25", legacy: "35", expectedInterval: 25 },
-    { primary: "0", legacy: "35", expectedInterval: 60_000 },
-    { primary: "not-a-number", legacy: "35", expectedInterval: 60_000 },
-  ])("uses $expectedInterval ms for primary=$primary legacy=$legacy", async ({ primary, legacy, expectedInterval }) => {
-    vi.useFakeTimers();
-    vi.stubEnv("PI_CBM_AUTO_REFRESH_INTERVAL_MS", primary ?? "");
-    vi.stubEnv("CBM_AUTO_REFRESH_INTERVAL_MS", legacy ?? "");
-
+describe("lifecycle", () => {
+  it("adds markdown guidance and does not auto-index cbm", async () => {
     const { registerLifecycle } = await import("../src/extension/lifecycle.js");
-    const handlers = new Map<string, (event: unknown, context: unknown) => unknown>();
+    const handlers = new Map<string, (event: any, context?: unknown) => unknown>();
     const pi = {
-      on(event: string, handler: (event: unknown, context: unknown) => unknown) {
-        handlers.set(event, handler);
+      on(event: string, handler: (event: unknown, context?: unknown) => unknown) {
+        handlers.set(event, handler as any);
       },
     } as unknown as ExtensionAPI;
-    const indexCurrentRepo = vi.fn().mockResolvedValue({ status: "indexed", project: "repo" });
-    const services = {
-      projects: { indexCurrentRepo },
-      settings: { reload: vi.fn() },
-    } as unknown as CbmServices;
-    const context = {
-      cwd: "/repo",
-      signal: new AbortController().signal,
-      ui: { setStatus: vi.fn() },
-    };
+    const indexCurrentRepo = vi.fn();
+    const services = { projects: { indexCurrentRepo } } as unknown as CbmServices;
 
     registerLifecycle(pi, services);
-    handlers.get("session_start")?.({}, context);
-    expect(indexCurrentRepo).toHaveBeenCalledTimes(1);
 
-    await vi.advanceTimersByTimeAsync(expectedInterval - 1);
-    expect(indexCurrentRepo).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(1);
-    expect(indexCurrentRepo).toHaveBeenCalledTimes(2);
+    const result = await handlers.get("before_agent_start")?.({ systemPrompt: "base" });
+    handlers.get("session_start")?.({}, { cwd: "/repo" });
 
-    handlers.get("session_shutdown")?.({}, context);
-    await vi.advanceTimersByTimeAsync(expectedInterval * 2);
-    expect(indexCurrentRepo).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({ systemPrompt: expect.stringContaining("pi-cbm-md guidance") });
+    expect(indexCurrentRepo).not.toHaveBeenCalled();
   });
 });

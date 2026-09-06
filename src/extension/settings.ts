@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 
-const SETTINGS_FILE_NAME = "pi-cbm-settings.json";
+const SETTINGS_FILE_NAME = "pi-cbm-md-settings.json";
 
 export interface CbmSettings {
   autoIndexNonGitDirectories?: boolean;
@@ -29,7 +29,7 @@ export function loadSettings(): Required<CbmSettings> {
         typeof settings.autoIndexNonGitDirectories === "boolean" ? settings.autoIndexNonGitDirectories : DEFAULT_SETTINGS.autoIndexNonGitDirectories,
     };
   } catch (error) {
-    console.error("Failed to load pi-cbm settings:", error);
+    console.error("Failed to load pi-cbm-md settings:", error);
     return { ...DEFAULT_SETTINGS };
   }
 }
@@ -43,6 +43,6 @@ export function saveSettings(settings: Required<CbmSettings>): void {
     }
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf8");
   } catch (error) {
-    console.error("Failed to save pi-cbm settings:", error);
+    console.error("Failed to save pi-cbm-md settings:", error);
   }
 }

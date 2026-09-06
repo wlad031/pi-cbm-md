@@ -1,8 +1,8 @@
 {
-  "name": "pi-cbm",
-  "version": "1.2.1",
+  "name": "pi-cbm-md",
+  "version": "0.1.0",
   "type": "module",
-  "description": "Extension that exposes `codebase-memory-mcp` as native Pi tools, adds auto-indexing and deliberate obtimizations for agent-workflows and token saving.",
+  "description": "Markdown-focused Pi extension with native tools for listing, outlining, reading, and searching Markdown/MDX docs.",
   "main": "./src/index.ts",
   "files": [
     "src/",
@@ -12,8 +12,10 @@
   "keywords": [
     "pi-package",
     "pi-extension",
-    "codebase-memory",
-    "code-intelligence"
+    "markdown",
+    "mdx",
+    "docs",
+    "codebase-memory"
   ],
   "license": "MIT",
   "pi": {
@@ -45,10 +47,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/alexykn/pi-cbm.git"
+    "url": "git+https://github.com/wlad031/pi-cbm-md.git"
   },
   "bugs": {
-    "url": "https://github.com/alexykn/pi-cbm/issues"
+    "url": "https://github.com/wlad031/pi-cbm-md/issues"
   },
-  "homepage": "https://github.com/alexykn/pi-cbm#readme"
+  "homepage": "https://github.com/wlad031/pi-cbm-md#readme"
 }

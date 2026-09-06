@@ -101,7 +101,7 @@ export class CbmClient {
 }
 
 function resolveCbmEnvironment(): NodeJS.ProcessEnv | undefined {
-  const cacheDirectory = process.env.PI_CBM_CACHE_DIR?.trim() || process.env.CBM_CACHE_DIR?.trim();
+  const cacheDirectory = process.env.PI_CBM_MD_CACHE_DIR?.trim() || process.env.PI_CBM_CACHE_DIR?.trim() || process.env.CBM_CACHE_DIR?.trim();
   if (!cacheDirectory) return undefined;
   return { ...process.env, CBM_CACHE_DIR: cacheDirectory };
 }

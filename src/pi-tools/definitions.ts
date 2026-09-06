@@ -1,5 +1,6 @@
 import { Type } from "typebox";
 import type { CbmClient } from "../cbm/client.js";
+import type { MarkdownService } from "../domain/markdown.js";
 import type { OutputService } from "../domain/output.js";
 import type { ProjectService, ToolExecutionContext } from "../domain/project.js";
 import type { QueryService } from "../domain/query.js";
@@ -30,6 +31,7 @@ export type CbmServices = {
   symbols: SymbolService;
   trace: TraceService;
   query: QueryService;
+  markdown: MarkdownService;
   settings: CbmRuntimeSettings;
 };
 
@@ -45,7 +47,86 @@ export type ToolDefinition = {
   renderResult?: (result: { details?: Record<string, unknown> }, options: unknown, theme: any) => unknown;
 };
 
-export const toolDefinitions: ToolDefinition[] = [
+const allToolDefinitions: ToolDefinition[] = [
+  {
+    name: "list_markdown_files",
+    label: "Markdown Files",
+    description: "List Markdown/MDX files in the current project with size and heading counts.",
+    promptSnippet: "list_markdown_files(root?, max_files?): list docs before focused markdown search/read",
+    promptGuidelines: [
+      "Use list_markdown_files to discover README, docs, notes, and MDX content in the current project.",
+      "Prefer this over shell find for Markdown inventory.",
+      "Use root only to narrow within the current repository; paths outside the repository are blocked.",
+    ],
+    parameters: Type.Object({
+      root: Type.Optional(Type.String({ description: "Optional subdirectory under the current repository." })),
+      max_files: Type.Optional(Type.Number({ default: 500 })),
+    }),
+    execute: (params, services, ctx) => services.markdown.listFiles(params, ctx),
+    renderCall: renderCall("list_markdown_files", (args) => String(args.root ?? "markdown")),
+    renderResult: renderResult("list_markdown_files"),
+  },
+  {
+    name: "outline_markdown",
+    label: "Markdown Outline",
+    description: "Extract heading outline from one Markdown/MDX file.",
+    promptSnippet: "outline_markdown(path): inspect headings before reading long markdown",
+    promptGuidelines: [
+      "Use outline_markdown before reading long Markdown files.",
+      "Then call read_markdown with heading to fetch only the relevant section.",
+      "Paths are resolved inside the current repository or chosen root.",
+    ],
+    parameters: Type.Object({
+      path: Type.String({ description: "Markdown/MDX file path under the current repository or root." }),
+      root: Type.Optional(Type.String({ description: "Optional subdirectory under the current repository." })),
+    }),
+    execute: (params, services, ctx) => services.markdown.outline(params, ctx),
+    renderCall: renderCall("outline_markdown", (args) => String(args.path ?? "")),
+    renderResult: renderResult("outline_markdown"),
+  },
+  {
+    name: "read_markdown",
+    label: "Markdown Read",
+    description: "Read one Markdown/MDX file, optionally limited to a heading section.",
+    promptSnippet: "read_markdown(path, heading?, max_bytes?): read focused markdown content",
+    promptGuidelines: [
+      "Use read_markdown for known Markdown files instead of raw file reads when you only need docs content.",
+      "Pass heading after outline_markdown to keep context focused.",
+      "Use max_bytes to cap long docs; default 256 KiB.",
+    ],
+    parameters: Type.Object({
+      path: Type.String({ description: "Markdown/MDX file path under the current repository or root." }),
+      heading: Type.Optional(Type.String({ description: "Exact heading title or slug to read as a section." })),
+      root: Type.Optional(Type.String({ description: "Optional subdirectory under the current repository." })),
+      max_bytes: Type.Optional(Type.Number({ default: 262144 })),
+    }),
+    execute: (params, services, ctx) => services.markdown.read(params, ctx),
+    renderCall: renderCall("read_markdown", (args) => String(args.path ?? "")),
+    renderResult: renderResult("read_markdown"),
+  },
+  {
+    name: "search_markdown",
+    label: "Markdown Search",
+    description: "Search Markdown/MDX files with literal or regex matching and line context.",
+    promptSnippet: "search_markdown(pattern, regex?, context?, limit?): search docs and notes",
+    promptGuidelines: [
+      "Use search_markdown for exact phrases, headings, frontmatter keys, links, todos, and docs text.",
+      "Prefer this over search_code when task is Markdown/doc focused.",
+      "Use regex=true only when you need pattern matching; literal search is safer by default.",
+    ],
+    parameters: Type.Object({
+      pattern: Type.String(),
+      root: Type.Optional(Type.String({ description: "Optional subdirectory under the current repository." })),
+      regex: Type.Optional(Type.Boolean()),
+      case_sensitive: Type.Optional(Type.Boolean()),
+      context: Type.Optional(Type.Number({ default: 2 })),
+      limit: Type.Optional(Type.Number({ default: 50 })),
+      max_files: Type.Optional(Type.Number({ default: 500 })),
+    }),
+    execute: (params, services, ctx) => services.markdown.search(params, ctx),
+    renderCall: renderCall("search_markdown", (args) => String(args.pattern ?? "")),
+    renderResult: renderResult("search_markdown"),
+  },
   {
     name: "search_graph",
     label: "CBM Search Graph",
@@ -385,3 +466,20 @@ export const toolDefinitions: ToolDefinition[] = [
     renderResult: renderResult("detect_changes"),
   },
 ];
+
+const markdownToolDefinitions = allToolDefinitions.filter((definition) => definition.name.includes("markdown"));
+const graphToolAliases = allToolDefinitions
+  .filter((definition) => !definition.name.includes("markdown"))
+  .map((definition) => ({
+    ...definition,
+    name: `md_${definition.name}`,
+    label: `MD ${definition.label}`,
+    description: `${definition.description} Namespaced alias for co-installing pi-cbm-md with pi-cbm.`,
+    promptSnippet: `md_${definition.promptSnippet}`,
+    promptGuidelines: [
+      `Use md_${definition.name} when you need code graph context from pi-cbm-md without conflicting with pi-cbm's ${definition.name}.`,
+      ...definition.promptGuidelines,
+    ],
+  }));
+
+export const toolDefinitions: ToolDefinition[] = [...markdownToolDefinitions, ...graphToolAliases];
