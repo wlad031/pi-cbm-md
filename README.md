@@ -15,13 +15,19 @@ Markdown-focused Pi extension built from [`pi-cbm`](https://github.com/alexykn/p
 ## Install
 
 ```sh
-pi install npm:pi-cbm-md
+pi install git:git@github.com:wlad031/pi-cbm-md.git
+```
+
+Or from a local checkout:
+
+```sh
+pi install /path/to/pi-cbm-md
 ```
 
 Or test for one run:
 
 ```sh
-pi -e npm:pi-cbm-md
+pi -e git:git@github.com:wlad031/pi-cbm-md.git
 ```
 
 ## Markdown tools
